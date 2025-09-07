@@ -38,7 +38,7 @@ const getCurrentStudentId = () => {
   const settings = getSettings();
   if (!settings.studentId) {
     // 生成唯一学生ID
-    const studentId = `student_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const studentId = `student_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     localStorage.updateSettings({ ...settings, studentId });
     return studentId;
   }
@@ -58,7 +58,7 @@ class SyncManager {
     this.syncQueue.push({
       ...operation,
       timestamp: Date.now(),
-      id: Math.random().toString(36).substr(2, 9)
+      id: Math.random().toString(36).substring(2, 11)
     });
     this.saveQueueToLocal();
   }

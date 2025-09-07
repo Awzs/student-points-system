@@ -111,6 +111,11 @@ const TimeExchange = () => {
       // 保存记录
       await timeRecordService.create(record);
 
+      // 触发数据更新事件，通知其他组件刷新
+      window.dispatchEvent(new CustomEvent('timeUpdated', {
+        detail: { minutes: sessionTime, type: activeSession.type, record }
+      }));
+
       setMessage({
         type: 'success',
         text: `成功记录${sessionTime}分钟${activeSession.type === 'game' ? '游戏' : '泛娱乐'}时间`

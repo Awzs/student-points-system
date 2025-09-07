@@ -51,9 +51,24 @@ const Dashboard = () => {
 
     loadStats();
 
+    // 监听数据更新事件
+    const handleDataUpdate = () => {
+      console.log('📊 检测到数据更新，重新加载统计数据');
+      loadStats();
+    };
+
+    // 添加事件监听器
+    window.addEventListener('pointsUpdated', handleDataUpdate);
+    window.addEventListener('timeUpdated', handleDataUpdate);
+
     // 每分钟更新一次状态
     const interval = setInterval(loadStats, 60000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('pointsUpdated', handleDataUpdate);
+      window.removeEventListener('timeUpdated', handleDataUpdate);
+    };
   }, []);
 
   const formatTime = (minutes) => {

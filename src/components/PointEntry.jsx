@@ -129,6 +129,12 @@ const PointEntry = () => {
       }
 
       setMessage({ type: 'success', text: `成功添加 ${points} 积分！` });
+
+      // 触发数据更新事件，通知其他组件刷新
+      window.dispatchEvent(new CustomEvent('pointsUpdated', {
+        detail: { points, type: selectedType, record }
+      }));
+
       resetForm();
     } catch (error) {
       console.error('Error saving point record:', error);

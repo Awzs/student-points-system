@@ -1,25 +1,26 @@
 // 简单的功能测试
-import { 
-  calculateTotalPoints, 
-  calculateWeeklyPoints, 
+import {
+  calculateTotalPoints,
+  calculateWeeklyPoints,
   calculateAvailableTime,
   calculateRemainingTime,
-  validateTimeUsage 
+  validateTimeUsage
 } from './pointsCalculator.js';
-import { 
-  createPointRecord, 
-  createTimeRecord, 
-  POINT_TYPES, 
+import {
+  createPointRecord,
+  createTimeRecord,
+  POINT_TYPES,
   POINT_VALUES,
-  getWeekNumber 
+  getWeekNumber
 } from './dataModel.js';
-import { 
-  savePointRecord, 
-  saveTimeRecord, 
-  getPointRecords, 
+import {
+  savePointRecord,
+  saveTimeRecord,
+  getPointRecords,
   getTimeRecords,
-  clearAllData 
+  clearAllData
 } from './storage.js';
+import { pointRecordService } from '../services/dataService.js';
 
 // 测试数据
 const testPointRecords = [
@@ -247,3 +248,57 @@ export const runAllTests = () => {
   
   return results;
 };
+
+// 测试积分录入和实时更新功能
+export const testPointEntryAndUpdate = async () => {
+  console.log('🧪 测试积分录入和实时更新功能...');
+
+  try {
+    // 获取录入前的积分
+    const beforePoints = await calculateTotalPoints();
+    console.log(`📊 录入前总积分: ${beforePoints}`);
+
+    // 创建测试积分记录
+    const testRecord = createPointRecord(
+      POINT_TYPES.HANDWRITING,
+      POINT_VALUES[POINT_TYPES.HANDWRITING],
+      '测试书写笔迹优秀 - 自动测试',
+      { test: true, timestamp: new Date().toISOString() }
+    );
+
+    console.log('📝 创建测试记录:', testRecord);
+
+    // 使用数据服务保存记录
+    await pointRecordService.create(testRecord);
+    console.log('✅ 积分记录保存成功');
+
+    // 触发数据更新事件（模拟UI操作）
+    window.dispatchEvent(new CustomEvent('pointsUpdated', {
+      detail: { points: testRecord.value, type: testRecord.type, record: testRecord }
+    }));
+    console.log('📡 触发数据更新事件');
+
+    // 等待事件处理
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 验证积分计算
+    const afterPoints = await calculateTotalPoints();
+    console.log(`📊 录入后总积分: ${afterPoints}`);
+
+    const expectedPoints = beforePoints + testRecord.value;
+    if (afterPoints === expectedPoints) {
+      console.log('✅ 积分计算正确');
+      console.log(`✅ 成功增加 ${testRecord.value} 积分`);
+      return { success: true, beforePoints, afterPoints, addedPoints: testRecord.value };
+    } else {
+      console.error(`❌ 积分计算错误: 期望 ${expectedPoints}, 实际 ${afterPoints}`);
+      return { success: false, beforePoints, afterPoints, expectedPoints };
+    }
+  } catch (error) {
+    console.error('❌ 积分录入测试失败:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// 快速测试函数（在控制台中使用）
+window.testPointEntry = testPointEntryAndUpdate;

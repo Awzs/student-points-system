@@ -43,7 +43,7 @@ export const TIME_RULES = {
 
 // 创建积分记录
 export const createPointRecord = (type, value, description, metadata = {}) => ({
-  id: Date.now() + Math.random(),
+  id: `point_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
   type,
   value,
   description,
@@ -54,7 +54,7 @@ export const createPointRecord = (type, value, description, metadata = {}) => ({
 
 // 创建时间使用记录
 export const createTimeRecord = (type, minutes, description) => ({
-  id: Date.now() + Math.random(),
+  id: `time_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
   type, // 'game' or 'entertainment'
   minutes,
   description,
