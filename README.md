@@ -67,13 +67,13 @@
 ### 环境要求
 - Node.js 16+
 - npm 或 yarn
-- Supabase 账号（可选，用于云端同步）
+- Supabase 账号（已配置，用于云端同步）
 
 ### 安装步骤
 
 1. **克隆项目**
 ```bash
-git clone <repository-url>
+git clone https://github.com/Awzs/student-points-system.git
 cd student-points-system
 ```
 
@@ -83,20 +83,14 @@ npm install
 ```
 
 3. **配置环境变量**
-```bash
-cp .env.example .env
-```
-
-编辑 `.env` 文件，填入你的 Supabase 配置：
+环境变量已经配置完成，包含了 Supabase 连接信息。如需修改，请编辑 `.env` 文件：
 ```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=https://mhtvmrtdkwozlbkgtwdh.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-4. **设置 Supabase 数据库**
-- 在 Supabase 控制台中创建新项目
-- 在 SQL Editor 中运行 `supabase-schema.sql` 文件
-- 获取项目 URL 和 anon key
+4. **Supabase 数据库**
+数据库表结构已经创建完成。如需重新创建，请在 Supabase SQL Editor 中运行 `supabase-schema.sql` 文件。
 
 5. **启动开发服务器**
 ```bash
@@ -105,6 +99,15 @@ npm start
 
 6. **访问应用**
 打开浏览器访问 `http://localhost:5173`
+
+## ✅ 项目状态
+
+- ✅ Supabase 环境变量已配置
+- ✅ 数据库表结构已创建
+- ✅ 本地运行测试通过
+- ✅ ESLint 代码检查通过
+- ✅ 生产构建测试通过
+- ✅ GitHub 仓库已创建
 
 ## 📦 项目结构
 
@@ -202,10 +205,18 @@ resetApp()
 npm run build
 ```
 
-2. **上传文件**
+2. **上传文件到阿里云服务器**
 ```bash
-# 将 dist 目录上传到服务器
-scp -r dist/* user@server:/path/to/web/root/
+# 方法1：使用 scp 命令上传
+scp -r dist/* user@your-server-ip:/var/www/html/
+
+# 方法2：使用 rsync 同步（推荐）
+rsync -avz --delete dist/ user@your-server-ip:/var/www/html/
+
+# 方法3：打包后上传
+tar -czf dist.tar.gz dist/
+scp dist.tar.gz user@your-server-ip:/tmp/
+ssh user@your-server-ip "cd /var/www/html && tar -xzf /tmp/dist.tar.gz --strip-components=1"
 ```
 
 3. **配置 Nginx**
@@ -213,18 +224,59 @@ scp -r dist/* user@server:/path/to/web/root/
 server {
     listen 80;
     server_name your-domain.com;
-    root /path/to/web/root;
+    root /var/www/html;
     index index.html;
 
+    # 支持 SPA 路由
     location / {
         try_files $uri $uri/ /index.html;
     }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # 安全头
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
 }
 ```
 
-4. **重启服务**
+4. **更新依赖和重启服务**
 ```bash
+# 连接到服务器
+ssh user@your-server-ip
+
+# 测试 Nginx 配置
+sudo nginx -t
+
+# 重新加载 Nginx 配置
+sudo systemctl reload nginx
+
+# 或重启 Nginx 服务
 sudo systemctl restart nginx
+
+# 检查服务状态
+sudo systemctl status nginx
+```
+
+5. **自动化部署脚本**
+创建 `deploy.sh` 脚本：
+```bash
+#!/bin/bash
+echo "开始构建项目..."
+npm run build
+
+echo "上传文件到服务器..."
+rsync -avz --delete dist/ user@your-server-ip:/var/www/html/
+
+echo "重启 Nginx 服务..."
+ssh user@your-server-ip "sudo systemctl reload nginx"
+
+echo "部署完成！"
 ```
 
 ## 📱 移动端优化
