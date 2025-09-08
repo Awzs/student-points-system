@@ -10,7 +10,7 @@ import {
 } from '../utils/pointsCalculator';
 import { getWeekNumber, isSettlementDay, isUsageDay } from '../utils/dataModel';
 
-const Dashboard = () => {
+const Dashboard = ({ onNavigate }) => {
   const [stats, setStats] = useState({
     totalPoints: 0,
     weeklyPoints: 0,
@@ -19,6 +19,8 @@ const Dashboard = () => {
     remainingTime: { totalTime: 0, gameTime: 0, entertainmentTime: 0 },
     hasConsecutiveBonus: false,
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [currentWeek] = useState(getWeekNumber(new Date()));
   const [isToday] = useState({
@@ -29,6 +31,9 @@ const Dashboard = () => {
   useEffect(() => {
     const loadStats = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+
         const totalPoints = await calculateTotalPoints();
         const weeklyPoints = await calculateWeeklyPoints();
         const availableTime = await calculateAvailableTime();
@@ -46,6 +51,9 @@ const Dashboard = () => {
         });
       } catch (error) {
         console.error('加载统计数据失败:', error);
+        setError('加载数据失败，请稍后重试');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -93,6 +101,38 @@ const Dashboard = () => {
     if (ratio > 0.3) return 'text-yellow-600';
     return 'text-red-600';
   };
+
+  if (isLoading) {
+    return (
+      <div className="dashboard">
+        <div className="dashboard-header">
+          <h2>积分概览</h2>
+          <p className="week-info">第 {currentWeek} 周</p>
+        </div>
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>正在加载数据...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard">
+        <div className="dashboard-header">
+          <h2>积分概览</h2>
+          <p className="week-info">第 {currentWeek} 周</p>
+        </div>
+        <div className="error-state">
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()} className="btn-primary">
+            重新加载
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -224,11 +264,17 @@ const Dashboard = () => {
       <div className="quick-actions">
         <h3>快速操作</h3>
         <div className="action-buttons">
-          <button className="action-btn primary">
+          <button
+            className="action-btn primary"
+            onClick={() => onNavigate && onNavigate('entry')}
+          >
             <Plus size={16} />
             <span>录入积分</span>
           </button>
-          <button className="action-btn secondary">
+          <button
+            className="action-btn secondary"
+            onClick={() => onNavigate && onNavigate('exchange')}
+          >
             <Clock size={16} />
             <span>使用时间</span>
           </button>

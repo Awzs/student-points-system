@@ -9,6 +9,7 @@ import {
 } from '../utils/dataModel';
 import { pointRecordService } from '../services/dataService';
 import { getCurrentRankings, updateCurrentRankings } from '../utils/storage';
+import { successHaptic, errorHaptic, buttonHaptic } from '../utils/haptics';
 
 const PointEntry = () => {
   const [selectedType, setSelectedType] = useState('');
@@ -82,22 +83,52 @@ const PointEntry = () => {
     }
   };
 
+  const validateInput = () => {
+    if (!selectedType) {
+      return '请选择积分类型';
+    }
+
+    if (selectedType === POINT_TYPES.SUBJECT_PROGRESS && !newRankings.subjectRanking) {
+      return '请输入新的单科排名';
+    }
+
+    if (selectedType === POINT_TYPES.TOTAL_PROGRESS && !newRankings.totalClassRanking) {
+      return '请输入新的班级总排名';
+    }
+
+    if (selectedType === POINT_TYPES.ERROR_PRACTICE) {
+      if (!errorPractice.correct || !errorPractice.total) {
+        return '请输入正确题数和总题数';
+      }
+      if (parseInt(errorPractice.correct) > parseInt(errorPractice.total)) {
+        return '正确题数不能大于总题数';
+      }
+      if (!validateErrorPracticeAccuracy(parseInt(errorPractice.correct), parseInt(errorPractice.total))) {
+        return '准确率未达到80%要求，无法获得积分';
+      }
+    }
+
+    const points = calculatePoints();
+    if (points === 0 && selectedType !== POINT_TYPES.ERROR_PRACTICE) {
+      return '积分计算结果为0，请检查输入';
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedType) {
-      setMessage({ type: 'error', text: '请选择积分类型' });
+
+    const validationError = validateInput();
+    if (validationError) {
+      setMessage({ type: 'error', text: validationError });
+      errorHaptic();
       return;
     }
 
     setIsSubmitting(true);
     try {
       const points = calculatePoints();
-      
-      if (points === 0 && selectedType !== POINT_TYPES.ERROR_PRACTICE) {
-        setMessage({ type: 'error', text: '积分计算结果为0，请检查输入' });
-        setIsSubmitting(false);
-        return;
-      }
 
       // 创建积分记录
       const record = createPointRecord(
@@ -129,6 +160,7 @@ const PointEntry = () => {
       }
 
       setMessage({ type: 'success', text: `成功添加 ${points} 积分！` });
+      successHaptic();
 
       // 触发数据更新事件，通知其他组件刷新
       window.dispatchEvent(new CustomEvent('pointsUpdated', {
@@ -139,6 +171,7 @@ const PointEntry = () => {
     } catch (error) {
       console.error('Error saving point record:', error);
       setMessage({ type: 'error', text: '保存失败，请重试' });
+      errorHaptic();
     } finally {
       setIsSubmitting(false);
     }
@@ -156,6 +189,7 @@ const PointEntry = () => {
     setMetadata({});
     setNewRankings({ subjectRanking: '', totalClassRanking: '', totalGradeRanking: '' });
     setErrorPractice({ correct: '', total: '' });
+    buttonHaptic();
   };
 
   const renderSpecialInputs = () => {

@@ -17,6 +17,7 @@ const TimeExchange = () => {
   
   const [activeSession, setActiveSession] = useState(null);
   const [sessionTime, setSessionTime] = useState(0);
+  const [sessionSeconds, setSessionSeconds] = useState(0);
   const [sessionType, setSessionType] = useState('');
   const [sessionDescription, setSessionDescription] = useState('');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -30,8 +31,15 @@ const TimeExchange = () => {
     let interval;
     if (isTimerRunning && activeSession) {
       interval = setInterval(() => {
-        setSessionTime(prev => prev + 1);
-      }, 60000); // 每分钟更新
+        setSessionSeconds(prev => {
+          const newSeconds = prev + 1;
+          if (newSeconds >= 60) {
+            setSessionTime(prevTime => prevTime + 1);
+            return 0;
+          }
+          return newSeconds;
+        });
+      }, 1000); // 每秒更新
     }
     return () => clearInterval(interval);
   }, [isTimerRunning, activeSession]);
@@ -70,6 +78,7 @@ const TimeExchange = () => {
     });
     setSessionType(type);
     setSessionTime(0);
+    setSessionSeconds(0);
     setIsTimerRunning(true);
     setMessage({ type: 'success', text: `开始${type === 'game' ? '游戏' : '泛娱乐'}会话` });
   };
@@ -131,6 +140,7 @@ const TimeExchange = () => {
   const resetSession = () => {
     setActiveSession(null);
     setSessionTime(0);
+    setSessionSeconds(0);
     setSessionType('');
     setSessionDescription('');
     setIsTimerRunning(false);
@@ -143,6 +153,15 @@ const TimeExchange = () => {
       return `${hours}小时${mins}分钟`;
     }
     return `${mins}分钟`;
+  };
+
+  const formatTimeWithSeconds = (minutes, seconds = 0) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const getTimeColor = (remaining, total) => {
@@ -243,7 +262,7 @@ const TimeExchange = () => {
             </div>
             <div className="session-timer">
               <Clock size={20} />
-              <span className="timer-display">{formatTime(sessionTime)}</span>
+              <span className="timer-display">{formatTimeWithSeconds(sessionTime, sessionSeconds)}</span>
             </div>
           </div>
           

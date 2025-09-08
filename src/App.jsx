@@ -6,9 +6,12 @@ import TimeExchange from './components/TimeExchange';
 import HistoryView from './components/HistoryView';
 import RulesView from './components/RulesView';
 import SettingsView from './components/SettingsView';
+import ErrorBoundary from './components/ErrorBoundary';
+import NetworkStatus from './components/NetworkStatus';
 import { getSettings } from './utils/storage';
 import { runAllTests } from './utils/test';
 import { setupDemoFunctions } from './utils/demoData';
+import { runIntegrationTests } from './utils/integrationTest';
 import { initializeDataService } from './services/dataService';
 import './App.css';
 
@@ -30,8 +33,10 @@ function App() {
         // 开发模式下添加测试功能到全局
         if (import.meta.env.DEV) {
           window.runTests = runAllTests;
+          window.runIntegrationTests = runIntegrationTests;
           setupDemoFunctions();
           console.log('🧪 开发模式：在控制台输入 runTests() 来运行功能测试');
+          console.log('🔧 集成测试：输入 runIntegrationTests() 来运行集成测试');
           console.log('🎭 演示模式：输入 loadDemoData() 来加载演示数据');
         }
       } catch (error) {
@@ -56,6 +61,10 @@ function App() {
 
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || Dashboard;
 
+  const handleNavigate = (tabId) => {
+    setActiveTab(tabId);
+  };
+
   if (!settings) {
     return (
       <div className="app-loading">
@@ -66,32 +75,37 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>学生积分管理系统</h1>
-        <p>欢迎，{settings.studentName}！</p>
-      </header>
+    <ErrorBoundary onReset={() => setActiveTab('dashboard')}>
+      <NetworkStatus />
+      <div className="app">
+        <header className="app-header">
+          <h1>学生积分管理系统</h1>
+          <p>欢迎，{settings.studentName}！</p>
+        </header>
 
-      <main className="app-main">
-        <ActiveComponent />
-      </main>
+        <main className="app-main">
+          <ErrorBoundary>
+            <ActiveComponent onNavigate={activeTab === 'dashboard' ? handleNavigate : undefined} />
+          </ErrorBoundary>
+        </main>
 
-      <nav className="app-nav">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <Icon size={20} />
-              <span>{tab.name}</span>
-            </button>
-          );
-        })}
-      </nav>
-    </div>
+        <nav className="app-nav">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <Icon size={20} />
+                <span>{tab.name}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </ErrorBoundary>
   );
 }
 
